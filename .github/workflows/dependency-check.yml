@@ -1,0 +1,49 @@
+name: Dependency Check
+
+on:
+  schedule:
+    # 每周一早上 9 点运行
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+jobs:
+  check-dependencies:
+    name: Check for outdated dependencies
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
+      - name: Check for outdated dependencies
+        run: |
+          npm outdated || true
+          
+      - name: Check for security vulnerabilities
+        run: |
+          npm audit --audit-level=moderate
+          
+      - name: Create issue if vulnerabilities found
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const output = `Security vulnerabilities found in dependencies.
+            
+            Please run \`npm audit\` locally to see details and fix the issues.
+            
+            **Workflow run:** ${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}
+            `;
+            
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '⚠️ Security vulnerabilities found in dependencies',
+              body: output,
+              labels: ['security', 'dependencies']
+            });
