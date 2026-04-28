@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Send, Image as ImageIcon, Trash2, Settings, Loader2 } from 'lucide-react';
+import { Send, Image as ImageIcon, Trash2, Settings, Loader2, BarChart3 } from 'lucide-react';
 import { useAppStore, type Message } from '@/store/appStore';
 import MessageBubble from '@/components/MessageBubble';
 import { validateImageFile, processImage } from '@/lib/imageUtils';
@@ -161,6 +161,13 @@ export default function Chat() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Link
+            to="/invest"
+            className="p-2 text-zinc-400 hover:text-emerald-400 hover:bg-zinc-800 rounded-lg transition-colors"
+            title="Invest Assistant"
+          >
+            <BarChart3 size={20} />
+          </Link>
           {store.messages.length > 0 && (
             <button
               onClick={store.clearMessages}
