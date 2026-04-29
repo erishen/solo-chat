@@ -1,13 +1,16 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Send, Trash2, Settings, Loader2, BarChart3, Brain, Zap, Sparkles } from 'lucide-react';
+import { Send, Trash2, Settings, Loader2, BarChart3, Brain, Zap, Sparkles, BookOpen } from 'lucide-react';
 import { chatQA } from '@/services/investApi';
+import ReactMarkdown from 'react-markdown';
 
 interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   timestamp: number;
+  suggestions?: string[];
+  sources?: string[];
 }
 
 export default function InvestChat() {
@@ -51,6 +54,8 @@ export default function InvestChat() {
         role: 'assistant',
         content: result.response,
         timestamp: Date.now(),
+        suggestions: result.suggestions,
+        sources: result.sources,
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
@@ -170,13 +175,51 @@ export default function InvestChat() {
             className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+              className={`max-w-[85%] rounded-2xl px-4 py-3 ${
                 message.role === 'user'
                   ? 'bg-gradient-to-r from-emerald-600 to-blue-600 text-white'
                   : 'bg-zinc-800 text-zinc-100'
               }`}
             >
-              <div className="whitespace-pre-wrap text-sm">{message.content}</div>
+              <div className="prose prose-invert prose-sm max-w-none">
+                {message.role === 'assistant' ? (
+                  <ReactMarkdown
+                    components={{
+                      p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                      ul: ({ children }) => <ul className="list-disc pl-4 mb-2">{children}</ul>,
+                      ol: ({ children }) => <ol className="list-decimal pl-4 mb-2">{children}</ol>,
+                      li: ({ children }) => <li className="mb-1">{children}</li>,
+                      strong: ({ children }) => <strong className="text-emerald-400">{children}</strong>,
+                      code: ({ children }) => <code className="bg-zinc-700 px-1 rounded text-xs">{children}</code>,
+                    }}
+                  >
+                    {message.content}
+                  </ReactMarkdown>
+                ) : (
+                  <div className="whitespace-pre-wrap">{message.content}</div>
+                )}
+              </div>
+              {message.role === 'assistant' && message.suggestions && message.suggestions.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-zinc-700">
+                  <p className="text-xs text-zinc-400 mb-2 flex items-center gap-1">
+                    <BookOpen size={12} />
+                    相关问题
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {message.suggestions.map((s, i) => (
+                      <button
+                        key={i}
+                        onClick={() => {
+                          setInputText(s);
+                        }}
+                        className="text-xs px-2 py-1 bg-zinc-700 hover:bg-zinc-600 rounded-lg transition-colors"
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         ))}
