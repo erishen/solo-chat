@@ -6,6 +6,7 @@ const Chat = lazy(() => import("@/pages/Chat"));
 const Settings = lazy(() => import("@/pages/Settings"));
 const Invest = lazy(() => import("@/pages/Invest"));
 const InvestChat = lazy(() => import("@/pages/InvestChat"));
+const Knowledge = lazy(() => import("@/pages/Knowledge"));
 
 function LoadingFallback() {
   return (
@@ -24,6 +25,7 @@ export default function App() {
             <Route path="/" element={<Chat />} />
             <Route path="/chat" element={<InvestChat />} />
             <Route path="/invest" element={<Invest />} />
+            <Route path="/knowledge" element={<Knowledge />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>
         </Suspense>

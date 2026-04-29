@@ -5,6 +5,7 @@ import {
   AlertTriangle, 
   BarChart3, 
   Brain,
+  Database,
   RefreshCw,
   ChevronRight,
   Loader2
@@ -287,6 +288,22 @@ export default function Invest() {
             <div>
               <h3 className="font-semibold">投资问答</h3>
               <p className="text-sm text-zinc-400">AI 投资助手，解答投资问题</p>
+            </div>
+            <ChevronRight size={20} className="text-zinc-400" />
+          </div>
+        </Link>
+
+        <Link
+          to="/knowledge"
+          className="block w-full p-4 bg-gradient-to-r from-blue-600/20 to-violet-600/20 rounded-xl border border-zinc-800 hover:border-zinc-700 transition-colors"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Database size={20} className="text-blue-400" />
+              <div>
+                <h3 className="font-semibold">知识库</h3>
+                <p className="text-sm text-zinc-400">RAG 知识库检索</p>
+              </div>
             </div>
             <ChevronRight size={20} className="text-zinc-400" />
           </div>
