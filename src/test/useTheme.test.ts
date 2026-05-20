@@ -4,7 +4,6 @@ import { useTheme } from '@/hooks/useTheme'
 
 describe('useTheme Hook', () => {
   const originalMatchMedia = window.matchMedia
-  const originalLocalStorage = window.localStorage
 
   beforeEach(() => {
     vi.stubGlobal('localStorage', {
