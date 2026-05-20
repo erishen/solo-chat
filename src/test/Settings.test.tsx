@@ -16,9 +16,11 @@ describe('Settings Page', () => {
     ollamaUrl: 'http://localhost:11434',
     isConnected: true,
     currentModel: 'gemma4:latest',
+    temperature: 0.7,
     setOllamaUrl: vi.fn(),
     setConnected: vi.fn(),
     setModel: vi.fn(),
+    setTemperature: vi.fn(),
   }
 
   beforeEach(() => {
