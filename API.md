@@ -274,7 +274,7 @@ GET /api/ollama/status
 curl http://localhost:3002/api/ollama/status
 
 # 指定 Ollama 地址
-curl "http://localhost:3002/api/ollama/status?url=http://192.168.1.100:11434"
+curl "http://localhost:3002/api/ollama/status?url=http://localhost:11434"
 ```
 
 ---
