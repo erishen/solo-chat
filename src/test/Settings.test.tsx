@@ -71,10 +71,13 @@ describe('Settings Page', () => {
     expect(input).toHaveValue('http://custom:11434')
   })
 
-  it('should have connect button', () => {
+  it('should have connect button', async () => {
     render(<Settings />)
 
-    expect(screen.getByRole('button', { name: /connect/i })).toBeInTheDocument()
+    // The component auto-tests the connection on mount, briefly rendering
+    // "Testing..." — wait for the attempt to settle and the label to
+    // return to "Connect".
+    expect(await screen.findByRole('button', { name: /connect/i })).toBeInTheDocument()
   })
 
   it('should have back link', () => {
@@ -109,6 +112,11 @@ describe('Settings Page', () => {
   it('should show testing state while connecting', async () => {
     const user = userEvent.setup()
 
+    render(<Settings />)
+
+    // Wait for the mount-time auto test to settle first.
+    const connectButton = await screen.findByRole('button', { name: /connect/i })
+
     vi.mocked(fetch).mockImplementation(() =>
       new Promise(resolve =>
         setTimeout(() =>
@@ -118,9 +126,6 @@ describe('Settings Page', () => {
       )
     )
 
-    render(<Settings />)
-
-    const connectButton = screen.getByRole('button', { name: /connect/i })
     await user.click(connectButton)
 
     expect(screen.getByText('Testing...')).toBeInTheDocument()
@@ -129,11 +134,13 @@ describe('Settings Page', () => {
   it('should handle connection error', async () => {
     const user = userEvent.setup()
 
-    vi.mocked(fetch).mockRejectedValueOnce(new Error('Connection failed'))
-
     render(<Settings />)
 
-    const connectButton = screen.getByRole('button', { name: /connect/i })
+    // Wait for the mount-time auto test to settle first.
+    const connectButton = await screen.findByRole('button', { name: /connect/i })
+
+    vi.mocked(fetch).mockRejectedValue(new Error('Connection failed'))
+
     await user.click(connectButton)
 
     await waitFor(() => {
