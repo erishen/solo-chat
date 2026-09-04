@@ -110,13 +110,15 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Deploy to Vercel
-        if: ${{ secrets.VERCEL_TOKEN != '' }}
+        if: env.VERCEL_TOKEN != ''
         uses: amondnet/vercel-action@v25
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
@@ -125,5 +127,5 @@ jobs:
           vercel-args: '--prod'
 
       - name: Deploy skipped (no VERCEL_TOKEN configured)
-        if: ${{ secrets.VERCEL_TOKEN == '' }}
+        if: env.VERCEL_TOKEN == ''
         run: echo "::warning::VERCEL_TOKEN secret not configured; skipping deploy"
