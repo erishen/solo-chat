@@ -6,6 +6,13 @@ on:
     - cron: '0 9 * * 1'
   workflow_dispatch:
 
+# 仓库级设置为 default_workflow_permissions=read，GITHUB_TOKEN 默认只读；
+# 不显式声明 issues: write 时 github-script 建 issue 会 403
+# "Resource not accessible by integration"。
+permissions:
+  contents: read
+  issues: write
+
 jobs:
   check-dependencies:
     name: Check for outdated dependencies
@@ -30,26 +37,90 @@ jobs:
         run: |
           pnpm outdated || true
 
+      # 审计结论不当作 job 失败：漏洞是「要跟踪的事」，不是「构建坏了」。
+      # 输出写进 step summary，并维护唯一一条 tracking issue（已存在则追加评论），
+      # 避免每周定时重复开新 issue。
+      # 想让漏洞直接置红 CI：删掉本步的 continue-on-error 即可。
       - name: Check for security vulnerabilities
+        id: audit
+        continue-on-error: true
         run: |
-          pnpm audit --audit-level=moderate
+          set +e
+          pnpm audit --audit-level=moderate 2>&1 | tee audit-report.txt
+          code=${PIPESTATUS[0]}
+          set -e
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+          {
+            echo "### pnpm audit (--audit-level=moderate)"
+            echo
+            echo '```'
+            cat audit-report.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Create issue if vulnerabilities found
-        if: failure()
+      - name: Report vulnerabilities as an issue
+        if: steps.audit.outputs.exit_code != '0'
         uses: actions/github-script@v7
         with:
           script: |
-            const output = `Security vulnerabilities found in dependencies.
+            const fs = require('fs');
+            const runUrl = `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
+            let audit = '(audit output unavailable)';
+            try {
+              audit = fs.readFileSync('audit-report.txt', 'utf8');
+            } catch (e) {
+              core.warning(`读取 audit-report.txt 失败：${e.message}`);
+            }
 
-            Please run \`pnpm audit\` locally to see details and fix the issues.
+            const title = '⚠️ Dependency vulnerabilities reported by pnpm audit';
+            const body = [
+              '`pnpm audit --audit-level=moderate` 报告依赖漏洞。',
+              '',
+              `**Workflow run:** ${runUrl}`,
+              '',
+              '<details><summary>pnpm audit output</summary>',
+              '',
+              '```',
+              audit.slice(-55000),
+              '```',
+              '',
+              '</details>',
+            ].join('\n');
 
-            **Workflow run:** ${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}
-            `;
+            // 标签可能不存在，先确保创建，否则 create 会 422
+            for (const [name, color] of [['security', 'd73a4a'], ['dependencies', '0366d6']]) {
+              try {
+                await github.rest.issues.getLabel({ ...context.repo, name });
+              } catch {
+                try {
+                  await github.rest.issues.createLabel({ ...context.repo, name, color });
+                } catch (e) {
+                  core.warning(`无法创建标签 ${name}：${e.message}`);
+                }
+              }
+            }
 
-            github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: '⚠️ Security vulnerabilities found in dependencies',
-              body: output,
-              labels: ['security', 'dependencies']
+            const open = await github.rest.issues.listForRepo({
+              ...context.repo,
+              state: 'open',
+              labels: 'security',
+              per_page: 100,
             });
+            const existing = open.data.find((i) => i.title === title);
+
+            if (existing) {
+              await github.rest.issues.createComment({
+                ...context.repo,
+                issue_number: existing.number,
+                body,
+              });
+              core.info(`已追加评论到既有 issue #${existing.number}`);
+            } else {
+              const created = await github.rest.issues.create({
+                ...context.repo,
+                title,
+                body,
+                labels: ['security', 'dependencies'],
+              });
+              core.info(`已创建 issue #${created.data.number}`);
+            }
