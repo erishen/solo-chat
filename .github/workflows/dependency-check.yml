@@ -31,7 +31,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: pnpm
+          # 注意：本 job 只跑 `pnpm outdated` / `pnpm audit`，从不执行 `pnpm install`，
+          # pnpm store 目录不会被创建。开 `cache: pnpm` 会让 setup-node 的后置保存步骤
+          # 去保存一个不存在的 store 路径 → "Path Validation Error" 致 CI 红。
+          # 缓存对此检查型 job 既无用又有害，故不开。
 
       - name: Check for outdated dependencies
         run: |
